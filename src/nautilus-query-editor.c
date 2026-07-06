@@ -105,14 +105,12 @@ update_content_search_indicator (NautilusQueryEditor *self)
     gboolean content_search_active = self->query != NULL &&
                                      nautilus_query_get_search_content (self->query);
     
-    const char *icon_name = content_search_active ? 
-                           "eye-open-negative-filled-symbolic" : 
-                           "eye-not-looking-symbolic";
+    const char *button_label = content_search_active ? _("Text") : _("Files");
     const char *tooltip = content_search_active ? 
                          _("Searching Inside Files (Click to search filenames only)") :
                          _("Searching Filenames Only (Click to search inside files)");
     
-    gtk_button_set_icon_name (GTK_BUTTON (self->content_search_indicator), icon_name);
+    gtk_button_set_label (GTK_BUTTON (self->content_search_indicator), button_label);
     gtk_widget_set_tooltip_text (self->content_search_indicator, tooltip);
 }
 
@@ -717,13 +715,11 @@ nautilus_query_editor_init (NautilusQueryEditor *editor)
     gtk_widget_set_hexpand (editor->text, TRUE);
     gtk_widget_set_parent (editor->text, GTK_WIDGET (editor));
 
-    editor->content_search_indicator = gtk_button_new ();
-    gtk_button_set_icon_name (GTK_BUTTON (editor->content_search_indicator), "eye-not-looking-symbolic");
+    editor->content_search_indicator = gtk_button_new_with_label (_("Files"));
     gtk_widget_set_tooltip_text (editor->content_search_indicator, _("Searching Filenames Only (Click to search inside files)"));
     gtk_widget_set_margin_start (editor->content_search_indicator, 4);
     gtk_widget_set_margin_end (editor->content_search_indicator, 4);
-    gtk_widget_add_css_class (editor->content_search_indicator, "flat");
-    gtk_widget_add_css_class (editor->content_search_indicator, "circular");
+    gtk_widget_add_css_class (editor->content_search_indicator, "pill");
     gtk_widget_set_parent (editor->content_search_indicator, GTK_WIDGET (editor));
     g_signal_connect (editor->content_search_indicator, "clicked",
                       G_CALLBACK (on_content_search_toggle_clicked), editor);

@@ -717,9 +717,11 @@ nautilus_query_editor_init (NautilusQueryEditor *editor)
 
     editor->content_search_indicator = gtk_button_new_with_label (_("Files"));
     gtk_widget_set_tooltip_text (editor->content_search_indicator, _("Searching Filenames Only (Click to search inside files)"));
-    gtk_widget_set_margin_start (editor->content_search_indicator, 4);
-    gtk_widget_set_margin_end (editor->content_search_indicator, 4);
-    gtk_widget_add_css_class (editor->content_search_indicator, "pill");
+    gtk_widget_set_valign (editor->content_search_indicator, GTK_ALIGN_CENTER);
+    gtk_widget_set_margin_start (editor->content_search_indicator, 6);
+    gtk_widget_set_margin_end (editor->content_search_indicator, 6);
+    gtk_widget_set_margin_top (editor->content_search_indicator, 4);
+    gtk_widget_set_margin_bottom (editor->content_search_indicator, 4);
     gtk_widget_set_parent (editor->content_search_indicator, GTK_WIDGET (editor));
     g_signal_connect (editor->content_search_indicator, "clicked",
                       G_CALLBACK (on_content_search_toggle_clicked), editor);

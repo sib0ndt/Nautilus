@@ -45,6 +45,7 @@ struct _NautilusQueryEditor
 
     GtkWidget *prefix_icon;
     GtkWidget *text;
+    GtkWidget *content_search_indicator;
     GtkWidget *clear_icon;
     GtkWidget *popover;
     GtkWidget *dropdown_button;
@@ -96,6 +97,15 @@ update_filter_button (NautilusQueryEditor *self)
     {
         gtk_widget_remove_css_class (self->dropdown_button, "accent");
     }
+}
+
+static void
+update_content_search_indicator (NautilusQueryEditor *self)
+{
+    gboolean content_search_active = self->query != NULL &&
+                                     nautilus_query_get_search_content (self->query);
+    
+    gtk_widget_set_visible (self->content_search_indicator, content_search_active);
 }
 
 static void
@@ -297,6 +307,7 @@ recursive_search_preferences_changed (GSettings           *settings,
         update_filter_button (editor);
         nautilus_query_editor_changed (editor);
         update_fts_sensitivity (editor);
+        update_content_search_indicator (editor);
         update_search_information (editor);
     }
 }
@@ -313,6 +324,7 @@ nautilus_query_editor_dispose (GObject *object)
 
     gtk_widget_unparent (gtk_widget_get_first_child (GTK_WIDGET (editor)));
     g_clear_pointer (&editor->text, gtk_widget_unparent);
+    g_clear_pointer (&editor->content_search_indicator, gtk_widget_unparent);
     g_clear_pointer (&editor->dropdown_button, gtk_widget_unparent);
     g_clear_pointer (&editor->search_info_button, gtk_widget_unparent);
     g_clear_pointer (&editor->clear_icon, gtk_widget_unparent);
@@ -623,6 +635,7 @@ search_popover_fts_changed_cb (NautilusQueryEditor *editor,
     if (nautilus_query_update_search_content (editor->query))
     {
         update_filter_button (editor);
+        update_content_search_indicator (editor);
         nautilus_query_editor_changed (editor);
     }
 }
@@ -673,6 +686,14 @@ nautilus_query_editor_init (NautilusQueryEditor *editor)
     editor->text = gtk_text_new ();
     gtk_widget_set_hexpand (editor->text, TRUE);
     gtk_widget_set_parent (editor->text, GTK_WIDGET (editor));
+
+    editor->content_search_indicator = gtk_image_new_from_icon_name ("eye-open-negative-filled-symbolic");
+    g_object_set (editor->content_search_indicator, "accessible-role", GTK_ACCESSIBLE_ROLE_PRESENTATION, NULL);
+    gtk_widget_set_tooltip_text (editor->content_search_indicator, _("Searching Inside Files"));
+    gtk_widget_set_margin_start (editor->content_search_indicator, 4);
+    gtk_widget_set_margin_end (editor->content_search_indicator, 4);
+    gtk_widget_set_visible (editor->content_search_indicator, FALSE);
+    gtk_widget_set_parent (editor->content_search_indicator, GTK_WIDGET (editor));
 
     editor->clear_icon = gtk_image_new_from_icon_name (rtl ? "edit-clear-rtl-symbolic" :
                                                              "edit-clear-symbolic");
@@ -789,6 +810,7 @@ nautilus_query_editor_set_location (NautilusQueryEditor *editor,
     nautilus_query_set_location (editor->query, editor->location);
 
     update_fts_sensitivity (editor);
+    update_content_search_indicator (editor);
     update_search_information (editor);
 
     gtk_image_set_from_icon_name (GTK_IMAGE (editor->prefix_icon),
@@ -849,6 +871,7 @@ nautilus_query_editor_set_query (NautilusQueryEditor *self,
                                                     nautilus_query_get_date_range (self->query));
         }
         update_fts_sensitivity (self);
+        update_content_search_indicator (self);
 
         g_object_notify (G_OBJECT (self), "query");
     }

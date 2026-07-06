@@ -86,6 +86,42 @@ file_is_remote (GFile *file)
            g_file_info_get_attribute_boolean (file_system_info, G_FILE_ATTRIBUTE_FILESYSTEM_REMOTE);
 }
 
+static gboolean
+search_file_content (GFile       *file,
+                     const gchar *search_text)
+{
+    g_autoptr (GFileInputStream) stream = NULL;
+    g_autoptr (GError) error = NULL;
+    gchar buffer[4096];
+    gssize bytes_read;
+    g_autofree gchar *search_lower = NULL;
+
+    stream = g_file_read (file, NULL, &error);
+    if (stream == NULL)
+    {
+        return FALSE;
+    }
+
+    search_lower = g_utf8_strdown (search_text, -1);
+
+    while ((bytes_read = g_input_stream_read (G_INPUT_STREAM (stream),
+                                               buffer,
+                                               sizeof (buffer) - 1,
+                                               NULL,
+                                               &error)) > 0)
+    {
+        buffer[bytes_read] = '\0';
+        g_autofree gchar *buffer_lower = g_utf8_strdown (buffer, -1);
+        
+        if (buffer_lower != NULL && strstr (buffer_lower, search_lower) != NULL)
+        {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
 static void
 visit_directory (NautilusSearchEngineSimple *self,
                  GFile                      *dir)
@@ -111,6 +147,8 @@ visit_directory (NautilusSearchEngineSimple *self,
     gboolean show_hidden = nautilus_query_get_show_hidden_files (query);
     gboolean recursion_enabled = nautilus_query_recursive (query);
     gboolean per_location_recursive_check = nautilus_query_recursive_local_only (query);
+    gboolean search_content = nautilus_query_get_search_content (query);
+    const gchar *search_text = nautilus_query_get_text (query);
 
     GFileInfo *info;
     while (g_file_enumerator_iterate (enumerator, &info, NULL, cancellable, NULL) &&
@@ -187,6 +225,16 @@ visit_directory (NautilusSearchEngineSimple *self,
             found = nautilus_date_time_is_between_dates (target_date,
                                                          initial_date,
                                                          end_date);
+        }
+
+        if (!found && search_content && search_text != NULL &&
+            g_file_info_get_file_type (info) == G_FILE_TYPE_REGULAR)
+        {
+            if (search_file_content (child, search_text))
+            {
+                found = TRUE;
+                match = 1.0;
+            }
         }
 
         if (found)

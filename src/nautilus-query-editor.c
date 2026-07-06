@@ -105,7 +105,37 @@ update_content_search_indicator (NautilusQueryEditor *self)
     gboolean content_search_active = self->query != NULL &&
                                      nautilus_query_get_search_content (self->query);
     
-    gtk_widget_set_visible (self->content_search_indicator, content_search_active);
+    const char *icon_name = content_search_active ? 
+                           "eye-open-negative-filled-symbolic" : 
+                           "eye-not-looking-symbolic";
+    const char *tooltip = content_search_active ? 
+                         _("Searching Inside Files (Click to search filenames only)") :
+                         _("Searching Filenames Only (Click to search inside files)");
+    
+    gtk_button_set_icon_name (GTK_BUTTON (self->content_search_indicator), icon_name);
+    gtk_widget_set_tooltip_text (self->content_search_indicator, tooltip);
+}
+
+static void
+on_content_search_toggle_clicked (GtkButton           *button,
+                                   NautilusQueryEditor *self)
+{
+    if (self->query == NULL)
+    {
+        return;
+    }
+
+    gboolean current_value = g_settings_get_boolean (nautilus_preferences,
+                                                      NAUTILUS_PREFERENCES_FTS_ENABLED);
+    g_settings_set_boolean (nautilus_preferences,
+                           NAUTILUS_PREFERENCES_FTS_ENABLED,
+                           !current_value);
+
+    if (nautilus_query_update_search_content (self->query))
+    {
+        update_content_search_indicator (self);
+        nautilus_query_editor_changed (self);
+    }
 }
 
 static void
@@ -687,13 +717,16 @@ nautilus_query_editor_init (NautilusQueryEditor *editor)
     gtk_widget_set_hexpand (editor->text, TRUE);
     gtk_widget_set_parent (editor->text, GTK_WIDGET (editor));
 
-    editor->content_search_indicator = gtk_image_new_from_icon_name ("eye-open-negative-filled-symbolic");
-    g_object_set (editor->content_search_indicator, "accessible-role", GTK_ACCESSIBLE_ROLE_PRESENTATION, NULL);
-    gtk_widget_set_tooltip_text (editor->content_search_indicator, _("Searching Inside Files"));
+    editor->content_search_indicator = gtk_button_new ();
+    gtk_button_set_icon_name (GTK_BUTTON (editor->content_search_indicator), "eye-not-looking-symbolic");
+    gtk_widget_set_tooltip_text (editor->content_search_indicator, _("Searching Filenames Only (Click to search inside files)"));
     gtk_widget_set_margin_start (editor->content_search_indicator, 4);
     gtk_widget_set_margin_end (editor->content_search_indicator, 4);
-    gtk_widget_set_visible (editor->content_search_indicator, FALSE);
+    gtk_widget_add_css_class (editor->content_search_indicator, "flat");
+    gtk_widget_add_css_class (editor->content_search_indicator, "circular");
     gtk_widget_set_parent (editor->content_search_indicator, GTK_WIDGET (editor));
+    g_signal_connect (editor->content_search_indicator, "clicked",
+                      G_CALLBACK (on_content_search_toggle_clicked), editor);
 
     editor->clear_icon = gtk_image_new_from_icon_name (rtl ? "edit-clear-rtl-symbolic" :
                                                              "edit-clear-symbolic");
